@@ -185,8 +185,7 @@
 			}
   		});
 		
-		var Factory = Extends(Element, {
-			//diem dau cua moi lien ket
+		var Factory = Extends(Element, {			
 			root:'',
 		});
 		
