@@ -7,7 +7,7 @@
  *	Provides	: [LoadJS]
  *  Status		: []
  *--------------------------------------------------------------------------*/
-
+// obsolete
 (function(){
 
 
@@ -189,7 +189,6 @@
 				document.write('<scri' + 'pt src="' + this.filterPath() + '"></scri' + 'pt>');
 			}
   		});
-<<<<<<< HEAD
 		var ModuleLoader = Create({
 			_init : function(){
 				// Store elements
@@ -211,11 +210,9 @@
 				};	
 				return true;
 			}
-=======
 		
 		var Factory = Extends(Element, {			
-			root:'',
->>>>>>> 83c1fad8bfcae26494f9e15a57192075896d5e68
+			root:''
 		});
 		// Nha may san xuat
 		var FactoryLoader = Create({
