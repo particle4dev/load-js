@@ -17,7 +17,7 @@
    		 *
    		 *  ##### Examples
    		 *
-   		 *		
+   		 *	
    		 *
   		**/
   		var PathShortcutFactory = function(){			
@@ -46,6 +46,10 @@
 					working = true;
 					return its(paths[name]) || '';
 				};
+				//reason why we need a loop
+				// $source = $lib."/source"
+				// $source = $root."/lib"."/source"
+				// $source = '/root'."/lib"."/source"
 				var result = inPath;			
 				do {					
 					working = false;
@@ -56,7 +60,6 @@
 		};
 		LoadJS.PathShortcutFactory = new PathShortcutFactory();
   		// Interface
-		var pathLastModuleArray = [];
   		var pathLastModule = "";
   		var Element = (function(){
   			var f = function(){
@@ -122,6 +125,7 @@
   				this.src = src;
   				this.analyzePath();
   				this.type= LoadJS.Type.CSS;
+				console.log("load css :" + this.src);
   			},
   			// 1.CSS {<link href="onyx.css" media="screen" rel="stylesheet" type="text/css">}
   			create: function(){
@@ -151,6 +155,7 @@
   				this.src = src;
   				this.analyzePath();
   				this.type= LoadJS.Type.JS;
+				console.log("load js :" + this.src);
   			},
   			// 2.JS {<script src="package.js"></script>}
   			create: function(){
@@ -173,7 +178,7 @@
   			_init:  function(src){
   				this.src = src + "/" + "module.js";  							
   				this.analyzePath();  				
-  				console.log(this.src);
+  				console.log("load model :" + this.src);
   			},
   			create: function(){
   				this.script = document.createElement('script');
@@ -184,12 +189,71 @@
 				document.write('<scri' + 'pt src="' + this.filterPath() + '"></scri' + 'pt>');
 			}
   		});
-		
-		var Factory = Extends(Element, {
-			//diem dau cua moi lien ket
-			root:'',
+		var ModuleLoader = Create({
+			_init : function(){
+				// Store elements
+				this.elements = [];
+				this.index = 0;
+			},
+			push: function(e){
+				this.elements.push(e);
+			},
+			// Xuat ban element
+			published : function(){
+				var len = this.elements.length;
+				for(;this.index < len; this.index++){
+					if(this.elements[this.index] instanceof LoadJS.Module){
+						this.elements[this.index].rewritePath().create().append();
+						return false;
+					}
+					this.elements[this.index].rewritePath().create().append();
+				};	
+				return true;
+			}
 		});
-		
+		// Nha may san xuat
+		var FactoryLoader = Create({
+			
+			_init : function(){				
+				// Store path
+				this.path = [];				
+				// Store Module
+				this.module = [];
+			},
+			// Luu tru Path cua module;
+			pushPath: function(string){
+				this.path.push(LoadJS.PathShortcutFactory.rewrite( LoadJS.PathShortcutFactory.includeTrailingSlash(string) ));
+			},
+			// Lay Path Module
+			getPath: function(){
+				return this.path.shift();
+			},
+			// Kiem tra xem con load khong ?
+			isStillLoadModule: function(){
+				if(this.path.length == 0){
+					return false;
+				}
+				return true;
+			},
+			// Them 1 Module 
+			saveModule: function(module){
+				this.module.push(module);
+				return this;
+			},
+			// Xuat ban module
+			published : function(){
+				var len = this.module.length;
+				while(len--){
+					pathLastModule = LoadJS.FactoryLoader.getPath();
+					if(!this.module[len].published()) break;
+					this.module.pop();
+					console.log(len);
+				};
+				return this;
+			}
+		});
+		LoadJS.FactoryLoader = new FactoryLoader();
+
   		LoadJS.Type = {};
   		LoadJS.Type.CSS = 0;
   		LoadJS.Type.LESS = 1;
@@ -219,27 +283,33 @@
 				}
 				else {				
 					// load module.js
-					e = new LoadJS.Module( inPath );					
-					pathLastModuleArray.push(LoadJS.PathShortcutFactory.rewrite( LoadJS.PathShortcutFactory.includeTrailingSlash(e.path) ));
-					console.log(pathLastModuleArray);
+					e = new LoadJS.Module( inPath );
+					LoadJS.FactoryLoader.pushPath(e.path);
 				}
 				return e;
 			}
 			
 	  		var f = function(){
+				console.log('=======================new');
 	  			/** 
 			     * Public property
 			    **/
-			    var i = arguments.length,len = i-1, path, e;			    
-			    while(i--){
-			    	path = arguments[len-i];
-			    	e = createElement(path);
-			    	if(e){			    		
-			    		e.rewritePath().create().write();
-						console.log('done ' + e.src)
-			    	}					
-			    }
-				pathLastModule = pathLastModuleArray.shift();  			
+			    var i = arguments.length,len = i-1, path, e, m = new ModuleLoader();
+				LoadJS.FactoryLoader.saveModule(m);
+				if(i > 0){
+					while(i--){
+			    		path = arguments[len-i];
+			    		e = createElement(path);
+			    		if(e){		    		
+			    			m.push(e);
+			    		}					
+			    	}
+				}
+				if(m.published()||!LoadJS.FactoryLoader.isStillLoadModule()){
+						LoadJS.FactoryLoader.published();
+				}
+				pathLastModule = LoadJS.FactoryLoader.getPath();
+				console.log(LoadJS.FactoryLoader);  			
 	  		}
 	  
 	 		return f;
